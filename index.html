@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Eleven Solitaire</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(to bottom, #90EE90 0%, #32CD32 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Menu Screen */
+        .menu-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            min-width: 400px;
+            z-index: 1000;
+        }
+
+        .menu-screen h1 {
+            color: #FF6B35;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .menu-btn {
+            padding: 20px;
+            font-size: 1.3em;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .menu-btn.single {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .menu-btn.ai {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .menu-btn.multi {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        /* Game Screen */
+        .game-screen {
+            display: none;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            padding: 15px 30px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .timer {
+            font-size: 1.8em;
+            color: #333;
+        }
+
+        .timer.warning {
+            color: #ff0000;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Game Area */
+        .game-container {
+            display: grid;
+            grid-template-columns: 250px 1fr 250px;
+            gap: 20px;
+        }
+
+        /* Side Panels */
+        .side-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .side-panel h3 {
+            color: #FF6B35;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        .panel-stats {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .panel-stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            height: 100%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Play Area */
+        .play-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            min-height: 600px;
+        }
+
+        /* Pyramid */
+        .pyramid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 30px 0;
+        }
+
+        .pyramid-row {
+            display: flex;
+            gap: 5px;
+            margin: 3px 0;
+        }
+
+        /* Card Styling */
+        .card {
+            width: 70px;
+            height: 95px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            border-radius: 8px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .card:hover:not(.unavailable):not(.removed) {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .card.selected {
+            transform: translateY(-10px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.8);
+            border: 3px solid #FFD700;
+        }
+
+        .card.unavailable {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(50%);
+        }
+
+        .card.removed {
+            opacity: 0;
+            transform: scale(0) rotate(180deg);
+            pointer-events: none;
+        }
+
+        .card.available::after {
+            content: '●';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            color: #00ff00;
+            font-size: 1.2em;
+            text-shadow: 0 0 5px rgba(0,255,0,0.8);
+        }
+
+        /* Bottom Controls */
+        .bottom-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 15px;
+        }
+
+        .deck-area {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .deck-card {
+            width: 70px;
+            height: 95px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .deck-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.4);
+        }
+
+        .deck-count {
+            position: absolute;
+            bottom: 5px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .waste-pile {
+            width: 70px;
+            height: 95px;
+            border-radius: 8px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: all 0.2s;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .waste-pile:hover {
+            transform: translateY(-5px);
+        }
+
+        .waste-pile.selected {
+            transform: translateY(-10px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.8);
+            border: 3px solid #FFD700;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .action-btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            color: white;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-remove {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .btn-bonus {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-back {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Selection Sum */
+        .selection-sum {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .selection-sum.valid {
+            color: #00ff00;
+            text-shadow: 0 0 20px rgba(0,255,0,0.8);
+        }
+
+        .selection-sum.invalid {
+            color: #ff6b6b;
+        }
+
+        /* Messages */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 30px;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            font-size: 1.3em;
+            font-weight: bold;
+            z-index: 2000;
+            animation: slideIn 0.3s;
+            max-width: 400px;
+        }
+
+        .notification.success {
+            border-left: 5px solid #00ff00;
+        }
+
+        .notification.error {
+            border-left: 5px solid #ff0000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(500px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Game Over Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 3000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: scaleIn 0.3s;
+        }
+
+        .modal h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .modal.win h2 {
+            color: #FFD700;
+        }
+
+        .modal.lose h2 {
+            color: #ff6b6b;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+            .side-panel {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Menu Screen -->
+    <div class="menu-screen" id="menuScreen">
+        <h1>🎴 Get Eleven Solitaire</h1>
+        <p style="color: #666; font-size: 1.1em; margin-bottom: 20px;">Race to clear all cards!</p>
+        <div class="menu-buttons">
+            <button class="menu-btn single" onclick="startSinglePlayer()">
+                🎮 Single Player
+            </button>
+            <button class="menu-btn ai" onclick="showAIDifficulty()">
+                🤖 VS Computer
+            </button>
+            <button class="menu-btn multi" onclick="showLobby()">
+                🌐 Multiplayer Online
+            </button>
+        </div>
+    </div>
+
+    <!-- AI Difficulty Screen -->
+    <div class="menu-screen hidden" id="aiDifficultyScreen">
+        <h1>Select Difficulty</h1>
+        <div class="menu-buttons">
+            <button class="menu-btn single" onclick="startVsAI('easy')">
+                😊 Easy<br><small style="font-size: 0.7em;">AI: 4-7 seconds</small>
+            </button>
+            <button class="menu-btn ai" onclick="startVsAI('medium')">
+                😐 Medium<br><small style="font-size: 0.7em;">AI: 2-5 seconds</small>
+            </button>
+            <button class="menu-btn multi" onclick="startVsAI('hard')">
+                😈 Hard<br><small style="font-size: 0.7em;">AI: 1-3 seconds</small>
+            </button>
+        </div>
+        <button class="menu-btn" onclick="showMenu()" style="margin-top: 20px; background: #ccc; color: #333;">
+            ← Back
+        </button>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div class="menu-screen hidden" id="lobbyScreen">
+        <h1>Multiplayer Lobby</h1>
+        <input type="text" id="playerName" placeholder="Your name" style="width: 100%; padding: 15px; font-size: 1.1em; border: 2px solid #ddd; border-radius: 10px; margin: 10px 0;">
+        <input type="text" id="roomCode" placeholder="Room code (optional)" style="width: 100%; padding: 15px; font-size: 1.1em; border: 2px solid #ddd; border-radius: 10px; margin: 10px 0;">
+        <button class="menu-btn multi" onclick="joinRoom()" style="width: 100%; margin-top: 10px;">
+            Join Game
+        </button>
+        <div id="playerList" style="margin: 20px 0; padding: 20px; background: #f0f0f0; border-radius: 10px; min-height: 80px;">
+            Waiting for players...
+        </div>
+        <button class="menu-btn" onclick="showMenu()" style="width: 100%; background: #ccc; color: #333;">
+            ← Back
+        </button>
+    </div>
+
+    <!-- Game Screen -->
+    <div class="game-screen" id="gameScreen">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="stat-item">
+                <span>📊 Score:</span>
+                <span id="playerScore">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="timer" id="timer">3:00</span>
+            </div>
+            <div class="stat-item">
+                <span>🎴 Cards:</span>
+                <span id="cardsLeft">28</span>
+            </div>
+            <div class="stat-item">
+                <span>⭐ Bonus:</span>
+                <span id="bonusCount">0</span>
+            </div>
+        </div>
+
+        <!-- Game Container -->
+        <div class="game-container">
+            <!-- Left Panel (Player Stats) -->
+            <div class="side-panel">
+                <h3 id="player1Name">You</h3>
+                <div class="panel-stats">
+                    <div class="panel-stat-row">
+                        <span>Score:</span>
+                        <span id="p1Score">0</span>
+                    </div>
+                    <div class="panel-stat-row">
+                        <span>Cards:</span>
+                        <span id="p1Cards">28</span>
+                    </div>
+                    <div class="panel-stat-row">
+                        <span>Combo:</span>
+                        <span id="p1Combo">0</span>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <p style="margin-bottom: 10px; font-weight: bold;">Progress</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="p1Progress" style="width: 0%">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Area -->
+            <div class="play-area">
+                <div class="pyramid" id="pyramid"></div>
+                <div class="selection-sum hidden" id="selectionSum"></div>
+
+                <div class="bottom-controls">
+                    <div class="deck-area">
+                        <div class="deck-card" id="deckPile" onclick="drawCard()">
+                            <span class="deck-count" id="deckCount">27</span>
+                        </div>
+                        <div class="waste-pile" id="wastePile" onclick="selectWasteCard()"></div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="action-btn btn-remove" onclick="removeSelected()">REMOVE</button>
+                        <button class="action-btn btn-bonus" id="bonusBtn" onclick="useBonus()">BONUS (0)</button>
+                        <button class="action-btn btn-back" onclick="showMenu()">MENU</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel (Opponent Stats) -->
+            <div class="side-panel" id="opponentPanel">
+                <h3 id="player2Name">Opponent</h3>
+                <div class="panel-stats">
+                    <div class="panel-stat-row">
+                        <span>Score:</span>
+                        <span id="p2Score">0</span>
+                    </div>
+                    <div class="panel-stat-row">
+                        <span>Cards:</span>
+                        <span id="p2Cards">28</span>
+                    </div>
+                    <div class="panel-stat-row">
+                        <span>Combo:</span>
+                        <span id="p2Combo">0</span>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <p style="margin-bottom: 10px; font-weight: bold;">Progress</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="p2Progress" style="width: 0%">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modal">
+            <h2 id="modalTitle">Game Over</h2>
+            <p id="modalText" style="font-size: 1.5em; margin: 20px 0;"></p>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+                <button class="action-btn btn-remove" onclick="playAgain()">Play Again</button>
+                <button class="action-btn btn-back" onclick="showMenu()">Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
